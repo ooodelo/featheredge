@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>FeatherEdge</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f3f4f6;
+      color: #1f2933;
+    }
+    header {
+      padding: 16px;
+      background: #111827;
+      color: white;
+    }
+    main {
+      padding: 16px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      background: white;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .tab.active {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+    .field-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    input, select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      font-size: 13px;
+    }
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button.primary {
+      background: #2563eb;
+      color: white;
+    }
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    .warnings {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 4px;
+      background: #fef3c7;
+      color: #92400e;
+      display: none;
+    }
+    .warnings.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 style="margin:0;font-size:18px;">FeatherEdge</h1>
+    <p style="margin:4px 0 0;font-size:12px;color:#d1d5db;">Клинья, два режима параметризации, предпросмотр и пресеты.</p>
+  </header>
+  <main>
+    <div class="tabs">
+      <div class="tab" id="tab-board" data-mode="board">От доски</div>
+      <div class="tab" id="tab-tiling" data-mode="tiling">От разбиения</div>
+    </div>
+    <form id="params-form">
+      <div class="field-group" data-field="t_top">
+        <label>Толщина у верха <span><input type="number" step="0.1" id="t_top" /> мм</span></label>
+      </div>
+      <div class="field-group" data-field="angle_deg">
+        <label>Угол фаски <span><input type="number" step="0.5" id="angle_deg" /> °</span></label>
+      </div>
+      <div class="field-group board-only" data-field="board_length">
+        <label>Длина доски <span><input type="number" step="1" id="board_length" /> мм</span></label>
+      </div>
+      <div class="field-group tiling-only" data-field="course_count">
+        <label>Число рядов <span><input type="number" step="1" id="course_count" min="1" /></span></label>
+      </div>
+      <div class="field-group" data-field="step">
+        <label>Шаг курса W <span><input type="number" step="0.1" id="step" /> мм</span></label>
+      </div>
+      <div class="field-group" data-field="reveal">
+        <label>Видимая высота E <span><input type="number" step="0.1" id="reveal" /> мм</span></label>
+      </div>
+      <div class="field-group" data-field="t_bot">
+        <label>Толщина у низа <span><input type="number" step="0.1" id="t_bot" /> мм</span></label>
+      </div>
+      <div class="field-group" data-field="stagger_mode">
+        <label>Разбежка швов</label>
+        <select id="stagger_mode">
+          <option value="none">Без разбежки</option>
+          <option value="half">Полдоски</option>
+          <option value="random">Случайно</option>
+        </select>
+      </div>
+      <div class="field-group" data-field="min_joint">
+        <label>Мин. шов <span><input type="number" step="1" id="min_joint" /> мм</span></label>
+      </div>
+      <div class="field-group" data-field="base_offset">
+        <label>Нижний отступ <span><input type="number" step="1" id="base_offset" /> мм</span></label>
+      </div>
+      <div class="field-group" data-field="top_offset">
+        <label>Верхний отступ <span><input type="number" step="1" id="top_offset" /> мм</span></label>
+      </div>
+    </form>
+    <div id="warnings" class="warnings"></div>
+    <div class="actions">
+      <button type="button" class="secondary" id="preview-btn">Предпросмотр</button>
+      <button type="button" class="primary" id="create-btn">Создать</button>
+    </div>
+  </main>
+  <script>
+    const state = {
+      mode: 'board',
+      params: {},
+      warnings: []
+    };
+
+    const mmFactor = 25.4;
+
+    function mmToSU(value) {
+      return parseFloat(value || '0') / mmFactor;
+    }
+
+    function suToMM(value) {
+      return Math.round((parseFloat(value || '0') * mmFactor) * 10) / 10;
+    }
+
+    function selectTab(mode, shouldPush = true) {
+      state.mode = mode;
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.mode === mode);
+      });
+      document.querySelectorAll('.board-only').forEach(el => {
+        el.style.display = mode === 'board' ? 'block' : 'none';
+      });
+      document.querySelectorAll('.tiling-only').forEach(el => {
+        el.style.display = mode === 'tiling' ? 'block' : 'none';
+      });
+      if (shouldPush) {
+        pushParams();
+      }
+    }
+
+    function gatherParams() {
+      return {
+        mode: state.mode,
+        t_top: mmToSU(document.getElementById('t_top').value),
+        angle_deg: parseFloat(document.getElementById('angle_deg').value) || 0,
+        board_length: mmToSU(document.getElementById('board_length').value),
+        course_count: parseInt(document.getElementById('course_count').value, 10) || null,
+        step: mmToSU(document.getElementById('step').value),
+        reveal: mmToSU(document.getElementById('reveal').value),
+        t_bot: mmToSU(document.getElementById('t_bot').value),
+        stagger_mode: document.getElementById('stagger_mode').value,
+        min_joint: mmToSU(document.getElementById('min_joint').value),
+        base_offset: mmToSU(document.getElementById('base_offset').value),
+        top_offset: mmToSU(document.getElementById('top_offset').value)
+      };
+    }
+
+    function applyState(newState) {
+      if (!newState) return;
+      state.mode = newState.mode || state.mode;
+      state.params = newState.params || state.params;
+      state.warnings = newState.warnings || [];
+      render();
+    }
+
+    function render() {
+      selectTab(state.mode, false);
+      const params = state.params || {};
+      setValue('t_top', suToMM(params.t_top));
+      setValue('angle_deg', params.angle_deg);
+      setValue('board_length', suToMM(params.board_length));
+      setValue('course_count', params.course_count);
+      setValue('step', suToMM(params.step));
+      setValue('reveal', suToMM(params.reveal));
+      setValue('t_bot', suToMM(params.t_bot));
+      document.getElementById('stagger_mode').value = params.stagger_mode || 'half';
+      setValue('min_joint', suToMM(params.min_joint));
+      setValue('base_offset', suToMM(params.base_offset));
+      setValue('top_offset', suToMM(params.top_offset));
+
+      const warningsEl = document.getElementById('warnings');
+      if (state.warnings && state.warnings.length > 0) {
+        warningsEl.innerHTML = '<strong>Проверки:</strong><ul>' + state.warnings.map(w => `<li>${w}</li>`).join('') + '</ul>';
+        warningsEl.classList.add('visible');
+      } else {
+        warningsEl.textContent = '';
+        warningsEl.classList.remove('visible');
+      }
+    }
+
+    function setValue(id, value) {
+      const input = document.getElementById(id);
+      if (input) {
+        input.value = value != null ? value : '';
+      }
+    }
+
+    function pushParams() {
+      const payload = gatherParams();
+      payload.mode = state.mode;
+      if (window.sketchup && window.sketchup.apply) {
+        window.sketchup.apply(JSON.stringify(payload));
+      }
+    }
+
+    function requestPreview() {
+      if (window.sketchup && window.sketchup.request_preview) {
+        window.sketchup.request_preview();
+      }
+    }
+
+    function createCladding() {
+      pushParams();
+      if (window.sketchup && window.sketchup.create) {
+        window.sketchup.create();
+      }
+    }
+
+    document.getElementById('tab-board').addEventListener('click', () => selectTab('board', true));
+    document.getElementById('tab-tiling').addEventListener('click', () => selectTab('tiling', true));
+    document.getElementById('create-btn').addEventListener('click', createCladding);
+    document.getElementById('preview-btn').addEventListener('click', () => {
+      pushParams();
+      requestPreview();
+    });
+    document.getElementById('params-form').addEventListener('input', () => {
+      pushParams();
+    });
+
+    window.sketchup = window.sketchup || {};
+    window.sketchup.updateState = applyState;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>
