@@ -24,13 +24,13 @@ module FeatherEdge
       def activate
         group = selected_group
         unless group
-          UI.messagebox('Выберите группу обшивки FeatherEdge для правки.')
+          ::UI.messagebox('Выберите группу обшивки FeatherEdge для правки.')
           return
         end
 
         data = App.attribute_store.load(group)
         unless data
-          UI.messagebox('В выбранной группе нет данных FeatherEdge.')
+          ::UI.messagebox('В выбранной группе нет данных FeatherEdge.')
           return
         end
 

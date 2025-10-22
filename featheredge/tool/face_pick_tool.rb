@@ -97,7 +97,7 @@ module FeatherEdge
 
       def onSetCursor
         id = self.class.transparent_cursor_id || FALLBACK_CURSOR_ID
-        UI.set_cursor(id) if UI.respond_to?(:set_cursor)
+        ::UI.set_cursor(id) if ::UI.respond_to?(:set_cursor)
         true
       end
 
@@ -122,7 +122,7 @@ module FeatherEdge
 
       def toggle_direction_mode
         # placeholder for manual direction selection via edge pick in future revisions
-        UI.messagebox('Ручной выбор направления пока недоступен в этой версии.')
+        ::UI.messagebox('Ручной выбор направления пока недоступен в этой версии.')
       end
 
       def update_preview(params)
@@ -153,7 +153,7 @@ module FeatherEdge
         ).build
       rescue StandardError => e
         logger.error("Generation failed: #{e.message}")
-        UI.messagebox("Не удалось создать обшивку: #{e.message}")
+        ::UI.messagebox("Не удалось создать обшивку: #{e.message}")
       end
 
       def set_lod(level)
@@ -219,8 +219,8 @@ module FeatherEdge
         return @transparent_cursor_id if defined?(@transparent_cursor_id)
 
         @transparent_cursor_id = begin
-          if UI.respond_to?(:create_cursor) && File.exist?(CURSOR_IMAGE_PATH)
-            UI.create_cursor(CURSOR_IMAGE_PATH, *CURSOR_HOTSPOT)
+          if ::UI.respond_to?(:create_cursor) && File.exist?(CURSOR_IMAGE_PATH)
+            ::UI.create_cursor(CURSOR_IMAGE_PATH, *CURSOR_HOTSPOT)
           end
         rescue StandardError => e
           Support::Logging.logger.warn("Failed to load custom cursor: #{e.message}")
@@ -261,12 +261,12 @@ module FeatherEdge
       end
 
       def draw_scale_factor
-        return 1.0 unless UI.respond_to?(:scale_factor)
+        return 1.0 unless ::UI.respond_to?(:scale_factor)
 
         major_version = Sketchup.respond_to?(:version) ? Sketchup.version.to_i : 0
         return 1.0 if major_version < 25
 
-        factor = UI.scale_factor.to_f
+        factor = ::UI.scale_factor.to_f
         factor.positive? ? factor : 1.0
       rescue StandardError
         1.0
