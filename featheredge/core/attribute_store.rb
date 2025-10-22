@@ -25,16 +25,17 @@ module FeatherEdge
 
       def load(group)
         dict = group.attribute_dictionary(DICTIONARY)
-        return unless dict&.[]?(KEY)
+        value = dict&.[](KEY)
+        return unless value
 
-        JSON.parse(dict[KEY], symbolize_names: true)
+        JSON.parse(value, symbolize_names: true)
       rescue JSON::ParserError
         nil
       end
 
       def featheredge_group?(group)
         dict = group.attribute_dictionary(DICTIONARY)
-        dict&.[]?(KEY)
+        !!(dict&.[](KEY))
       end
     end
   end
