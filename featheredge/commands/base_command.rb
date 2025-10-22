@@ -2,7 +2,7 @@
 
 module FeatherEdge
   module Commands
-    class BaseCommand < UI::Command
+    class BaseCommand < ::UI::Command
       attr_reader :id
 
       def initialize(name, id: nil, &block)
