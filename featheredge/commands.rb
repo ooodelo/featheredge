@@ -11,7 +11,7 @@ module FeatherEdge
     extend Support::Logging
 
     def self.register!
-      menu = UI.menu('Extensions').add_submenu('FeatherEdge')
+      menu = ::UI.menu('Extensions').add_submenu('FeatherEdge')
       register_command(menu, CreateCladdingCommand)
       register_command(menu, EditCladdingCommand)
       register_command(menu, FlipDirectionCommand)
@@ -21,7 +21,7 @@ module FeatherEdge
     def self.register_command(menu, klass)
       command = klass.new
       menu.add_item(command)
-      UI.add_context_menu_handler do |context_menu|
+      ::UI.add_context_menu_handler do |context_menu|
         next unless command.respond_to?(:context_menu?) && command.context_menu?
 
         context_menu.add_item(command)
