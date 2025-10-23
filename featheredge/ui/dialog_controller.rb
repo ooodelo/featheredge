@@ -64,7 +64,7 @@ module FeatherEdge
         send_state
       rescue StandardError => e
         logger.error("Parameter update failed: #{e.message}")
-        UI.messagebox("Ошибка параметров: #{e.message}")
+        ::UI.messagebox("Ошибка параметров: #{e.message}")
       end
 
       def request_preview
@@ -96,12 +96,12 @@ module FeatherEdge
       private
 
       def build_dialog
-        dialog = UI::HtmlDialog.new(
+        dialog = ::UI::HtmlDialog.new(
           dialog_title: 'FeatherEdge',
           width: 420,
           height: 620,
           resizable: true,
-          style: UI::HtmlDialog::STYLE_DIALOG
+          style: ::UI::HtmlDialog::STYLE_DIALOG
         )
         dialog.set_file(File.join(__dir__, 'dialog.html'))
         register_callbacks(dialog)
